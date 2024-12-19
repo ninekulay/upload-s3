@@ -1,0 +1,56 @@
+image: docker:19
+
+services:
+  - docker:dind
+
+stages:
+  - build_prod
+  - deploy_prod
+
+variables:
+  DOCKER_IMAGE_NAME: express-upload-s3
+  PORT: $CI_PORT
+  IMAGE_TAG: express-upload-s3
+  CONTAINER_NAME: express-upload-s3
+
+before_script:
+  - echo "Before script steps, if any"
+
+
+build_prod:
+  stage: build_prod
+  tags:
+    - express-upload-s3
+  when: manual
+  script:
+    - echo "PORT=$CI_PORT" >> .env
+    - echo "SERVICE_AUTH_LIST=$CI_SERVICE_AUTH_LIST" >> .env
+
+    - echo "AWS_ACCESS_KEY_ID=$CI_AWS_ACCESS_KEY_ID" >> .env
+    - echo "AWS_SECRET_ACCESS_KEY=$CI_AWS_SECRET_ACCESS_KEY" >> .env
+    - echo "AWS_REGION=$CI_AWS_REGION" >> .env
+    - echo "AWS_S3_BUCKET=$CI_AWS_S3_BUCKET" >> .env
+
+    - cat .env
+
+  artifacts:
+    paths:
+      - .env
+
+deploy_prod:
+  stage: deploy_prod
+  when: manual
+  tags:
+    - express-upload-s3
+  needs: [build_prod]
+  script:
+    - docker image ls
+    - |
+      CONTAINER_ID=$(docker ps -aqf "name=$CONTAINER_NAME")
+      if [ -n "$CONTAINER_ID" ]; then
+        echo "Container is already running. Stopping and removing it..."
+        docker stop $CONTAINER_ID
+        docker rm $CONTAINER_ID  # Remove the old container
+      fi
+    - docker build -t $DOCKER_IMAGE_NAME:$IMAGE_TAG .
+    - docker run --restart always -d --network="host" --name $CONTAINER_NAME --env-file .env $DOCKER_IMAGE_NAME:$IMAGE_TAG pm2-runtime src/server-settings.js
