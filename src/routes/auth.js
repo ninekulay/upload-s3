@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const basicAuth = (req, res, next) => {
     const authHeader = req.headers.authorization;
     const credentialsList = process.env.SERVICE_AUTH_LIST.split(';'); // Assuming credentials are separated by semicolons
-
     if (!authHeader) {
         return res.status(401).json({ message: 'Authentication failed' }); 
     }

@@ -2,7 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const bodyParser = require('body-parser');
-const config = require('../config/config');
 const { exec } = require('child_process');
 
 // Initialize Express application
@@ -11,8 +10,8 @@ dotenv.config();
 
 const port = process.env.PORT || 3000; // Define the port number
 // Configure bodyParser middleware
-app.use(bodyParser.json());
-
+// app.use(bodyParser.json());
+app.use(express.json({ limit: '5mb' }));
 // Configure CORS
 const allowedOrigins = ['http://localhost:8080', process.env.SERVICE_BASE_URL];
 app.use(cors({
